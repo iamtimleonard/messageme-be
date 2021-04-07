@@ -1,10 +1,18 @@
 const app = require("express")();
 const http = require("http").createServer(app);
+const cors = require("cors");
+app.use(cors());
 const io = require("socket.io")(http, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"],
   },
+});
+
+const port = process.env.PORT || 8000;
+
+app.get("/", (req, res) => {
+  res.send("hello");
 });
 
 io.on("connection", (socket) => {
@@ -15,4 +23,6 @@ io.on("connection", (socket) => {
   });
 });
 
-http.listen(process.env.PORT || 8000, () => {});
+http.listen(port, () => {
+  console.log(`listening on port ${port}`);
+});
