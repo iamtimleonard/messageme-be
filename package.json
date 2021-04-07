@@ -4,6 +4,7 @@
   "description": "backend for messageme app",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "jest --watch"
   },
   "author": "Timothy Leonard",
