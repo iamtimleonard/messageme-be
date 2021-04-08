@@ -2,12 +2,6 @@ const express = require("express");
 const app = express();
 const http = require("http").createServer(app);
 const cors = require("cors");
-const io = require("socket.io")(http, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
-});
 
 const port = process.env.PORT || 8000;
 app.use(cors());
@@ -26,16 +20,28 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.json());
 
-const DUMMY_USER = {
-  id: 1,
-  username: "john",
-};
+const DUMMY_USERS = [
+  {
+    id: 1,
+    username: "john",
+    password: "doe",
+  },
+  {
+    id: 2,
+    username: "test",
+    password: "test",
+  },
+];
+
+let foundUser;
 
 passport.use(
   new LocalStrategy((username, password, done) => {
-    if (username === "john" && password === "doe") {
+    [foundUser] = DUMMY_USERS.filter((user) => user.username === username);
+    console.log(foundUser);
+    if (username === foundUser.username && password === foundUser.password) {
       console.log("authentication OK");
-      return done(null, DUMMY_USER);
+      return done(null, foundUser);
     } else {
       console.log("wrong credentials");
       return done(null, false);
@@ -65,6 +71,18 @@ passport.serializeUser((user, cb) => {
   cb(null, user.id);
 });
 
+passport.deserializeUser((id, cb) => {
+  console.log(`deserializeUser ${id}`);
+  cb(null, foundUser);
+});
+
+const io = require("socket.io")(http, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+});
+
 const wrap = (middleware) => (socket, next) =>
   middleware(socket.request, {}, next);
 
@@ -81,11 +99,11 @@ io.use((socket, next) => {
 });
 
 io.on("connect", (socket) => {
+  socket.emit("new user", `new connection ${socket.id}`);
+  console.log("new user");
   socket.on("whoami", (cb) => {
     cb(socket.request.user ? socket.request.user.username : "");
   });
-  socket.emit("new user", `new connection ${socket.id}`);
-  console.log("new user");
   socket.on("newChatMessage", (msg) => {
     io.emit("newChatMessage", msg);
   });
