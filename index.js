@@ -2,16 +2,29 @@ const express = require("express");
 const app = express();
 const http = require("http").createServer(app);
 const cors = require("cors");
+const mongoose = require("mongoose");
+require("dotenv").config();
+const User = require("./schema/User");
 
 const port = process.env.PORT || 8000;
 app.use(cors());
 
+const uri = process.env.ATLAS_URI;
+mongoose.connect(uri, {
+  useNewUrlParser: true,
+  useCreateIndex: true,
+  useUnifiedTopology: true,
+});
+const connection = mongoose.connection;
+connection.once("open", () => {
+  console.log("###### Connected to MongoDB #####");
+});
 const session = require("express-session");
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
 
 const sessionMiddleware = session({
-  secret: "changeit",
+  secret: "cats are very cool",
   resave: false,
   saveUninitialized: false,
 });
@@ -37,14 +50,23 @@ let foundUser;
 
 passport.use(
   new LocalStrategy((username, password, done) => {
-    [foundUser] = DUMMY_USERS.filter((user) => user.username === username);
-    if (username === foundUser.username && password === foundUser.password) {
-      console.log("authentication OK");
-      return done(null, foundUser);
-    } else {
-      console.log("wrong credentials");
-      return done(null, false);
-    }
+    User.find()
+      .then((users) => {
+        [foundUser] = users.filter((user) => user.username === username);
+        return foundUser;
+      })
+      .then((foundUser) => {
+        if (
+          username === foundUser.username &&
+          password === foundUser.password
+        ) {
+          console.log("authentication OK");
+          return done(null, foundUser);
+        } else {
+          console.log("wrong credentials");
+          return done(null, false);
+        }
+      });
   })
 );
 
@@ -66,6 +88,18 @@ app.post("/login", passport.authenticate("local"), (req, res) => {
   } else {
     console.log("unknown user");
   }
+});
+
+app.post("/register", (req, res) => {
+  const { username, password } = req.body;
+  const newUser = new User({
+    username,
+    password,
+  });
+  newUser
+    .save()
+    .then(() => res.json("success"))
+    .catch((err) => res.status(400).json("Error " + err));
 });
 
 passport.serializeUser((user, cb) => {
