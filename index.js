@@ -91,6 +91,7 @@ io.use(wrap(passport.initialize()));
 io.use(wrap(passport.session()));
 
 io.use((socket, next) => {
+  console.log(socket.request);
   if (socket.request.user) {
     next();
   } else {
