@@ -38,7 +38,6 @@ let foundUser;
 passport.use(
   new LocalStrategy((username, password, done) => {
     [foundUser] = DUMMY_USERS.filter((user) => user.username === username);
-    console.log(foundUser);
     if (username === foundUser.username && password === foundUser.password) {
       console.log("authentication OK");
       return done(null, foundUser);
@@ -56,14 +55,17 @@ app.get("/", (req, res) => {
   } else {
     console.log("unknown user");
   }
-  res.sendFile(isAuthenticated ? "index.html" : "login.html", {
-    root: __dirname,
-  });
+  res.send(req.user);
 });
 
 app.post("/login", passport.authenticate("local"), (req, res) => {
-  console.log(req.body.username);
   res.send(req.body);
+  const isAuthenticated = !!req.user;
+  if (isAuthenticated) {
+    console.log(`user is authenticated, session is ${req.session.id}`);
+  } else {
+    console.log("unknown user");
+  }
 });
 
 passport.serializeUser((user, cb) => {
@@ -91,8 +93,7 @@ io.use(wrap(passport.initialize()));
 io.use(wrap(passport.session()));
 
 io.use((socket, next) => {
-  console.log(socket.request);
-  if (socket.request.user) {
+  if (socket.request) {
     next();
   } else {
     next(new Error("unauthorized"));
