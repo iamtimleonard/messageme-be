@@ -1,6 +1,7 @@
 {
   "name": "messageme-be",
   "version": "1.0.0",
+  "private": true,
   "description": "backend for messageme app",
   "main": "index.js",
   "scripts": {

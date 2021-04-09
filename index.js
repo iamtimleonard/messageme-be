@@ -135,19 +135,21 @@ io.use((socket, next) => {
 });
 
 io.on("connect", (socket) => {
-  socket.emit("new user", `new connection ${socket.id}`);
-  console.log("new user");
-  socket.on("whoami", (cb) => {
-    cb(socket.request.user ? socket.request.user.username : "");
-  });
-  socket.on("newChatMessage", (msg) => {
-    io.emit("newChatMessage", msg);
-  });
-
   const session = socket.request.session;
   console.log(`saving sid ${socket.id} in session ${session.id}`);
+  const { roomId } = socket.handshake.query;
+  console.log(roomId);
+  socket.join(roomId);
+  socket.emit("new user", `new connection ${socket.id}`);
+  console.log("new user");
+  socket.on("newChatMessage", (msg) => {
+    io.in(roomId).emit("newChatMessage", msg);
+  });
   session.socketId = socket.id;
   session.save();
+  socket.on("disconnect", () => {
+    socket.leave(roomId);
+  });
 });
 
 http.listen(port, () => {
