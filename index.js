@@ -33,19 +33,6 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.json());
 
-const DUMMY_USERS = [
-  {
-    id: 1,
-    username: "john",
-    password: "doe",
-  },
-  {
-    id: 2,
-    username: "test",
-    password: "test",
-  },
-];
-
 let foundUser;
 
 passport.use(
@@ -56,6 +43,10 @@ passport.use(
         return foundUser;
       })
       .then((foundUser) => {
+        if (!foundUser) {
+          console.log("user not found");
+          return done(null, false);
+        }
         if (
           username === foundUser.username &&
           password === foundUser.password
